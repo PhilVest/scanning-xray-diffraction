@@ -8,14 +8,28 @@ import matplotlib.pyplot as plt
 def FBP_slice( grains, flt, rcut, ymin, ystep, number_y_scans):
     grain_masks=[]
     grain_recons=[]
+    grain_recons_raw=[]
+    grain_sinos=[]
     for i,g in enumerate(grains):
         sinoangles, sino, recon = FBP_grain( g, flt, \
                     ymin, ystep, number_y_scans )
         normalised_recon = recon/recon.max()
+        grain_sinos.append(sino)
+        grain_recons_raw.append(recon)
         grain_recons.append(normalised_recon)
         mask = normalised_recon > rcut
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
+    totalsino=np.sum(grain_sinos, axis=0)
+    totalrecon=np.sum(grain_recons, axis=0)
+
+    #Plotting the sinoograms and the grains
+    f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
+    a1.imshow(totalsino, aspect='auto')
+    a1.set(xlabel='angle', ylabel='dty/step')
+    a2.imshow(totalrecon, aspect='equal')
+    a2.set(xlabel="position/step", ylabel='position/step')
+    plt.show()
     return grain_masks
 
 
