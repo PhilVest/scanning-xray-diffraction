@@ -68,14 +68,14 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
                           y-translations are supported.")
 
     # Angular range into which to bin the data (step in sinogram)
-    angular_bin_size = 180./(number_y_scans)
+    angular_bin_size = 1#80./(number_y_scans)
 
     # Indices in sinogram for the y-scan and angles
     iy = np.round( (dty - ymin) / ystep ).astype(int)
     iom = np.round( omega / angular_bin_size ).astype(int)
 
     # Build the sinogram by accumulating intensity
-    sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float )
+    sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float32 )
     for i,I in enumerate(sum_intensity):
         dty_index   = iy[i]
         omega_index = iom[i]
@@ -89,7 +89,8 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
     sinogram = sinogram/normfactor
 
     # Perform reconstruction by inverse radon transform of the sinogram
-    theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
+    #theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
+    theta = np.linspace(0, 180, 181)
     back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
 
 
