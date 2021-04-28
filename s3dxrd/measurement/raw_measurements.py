@@ -137,7 +137,6 @@ class RawMeasurements(object):
         """
         self.grain_topology_mask=[]
         for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
-            grain_topology_mask = reconstruct_grainshapes.FBP_slice(gs, flt,       \
-                                        self.omegastep, rcut, self.ymin, \
+            grain_topology_mask = reconstruct_grainshapes.FBP_slice(gs, flt, rcut, self.ymin, \
                                         self.ystep, self.number_y_scans)                   
             self.grain_topology_mask.append( grain_topology_mask )
