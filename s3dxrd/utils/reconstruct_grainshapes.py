@@ -5,12 +5,12 @@ import sys
 import matplotlib.pyplot as plt
 
 
-def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
+def FBP_slice( grains, flt, rcut, ymin, ystep, number_y_scans):
     grain_masks=[]
     grain_recons=[]
     for i,g in enumerate(grains):
         sinoangles, sino, recon = FBP_grain( g, flt, \
-                    ymin, ystep, omegastep, number_y_scans )
+                    ymin, ystep, number_y_scans )
         normalised_recon = recon/recon.max()
         grain_recons.append(normalised_recon)
         mask = normalised_recon > rcut
@@ -19,7 +19,7 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
     return grain_masks
 
 
-def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
+def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
     """
     Reconstruct a 2d grain shape from diffraction data using Filtered-Back-projection.
     """
