@@ -20,16 +20,17 @@ def FBP_slice( grains, flt, rcut, ymin, ystep, number_y_scans):
         mask = normalised_recon > rcut
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
-    totalsino=np.sum(grain_sinos, axis=0)
+    #totalsino=np.sum(grain_sinos, axis=0)
     totalrecon=np.sum(grain_recons, axis=0)
 
-    #Plotting the sinoograms and the grains
-    f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
-    a1.imshow(totalsino, aspect='auto')
-    a1.set(xlabel='angle', ylabel='dty/step')
-    a2.imshow(totalrecon, aspect='equal')
-    a2.set(xlabel="position/step", ylabel='position/step')
-    plt.show()
+    if 0:
+        #Plotting the sinoograms and the grains
+        f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
+        a1.imshow(totalrecon, aspect='auto')
+        a1.set(xlabel='angle', ylabel='dty/step')
+        a2.imshow(totalrecon, aspect='equal')
+        a2.set(xlabel="position/step", ylabel='position/step')
+        plt.show()
     return grain_masks
 
 
@@ -68,7 +69,7 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
                           y-translations are supported.")
 
     # Angular range into which to bin the data (step in sinogram)
-    angular_bin_size = 1#80./(number_y_scans)
+    angular_bin_size = 180./(number_y_scans)
 
     # Indices in sinogram for the y-scan and angles
     iy = np.round( (dty - ymin) / ystep ).astype(int)
@@ -89,8 +90,8 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
     sinogram = sinogram/normfactor
 
     # Perform reconstruction by inverse radon transform of the sinogram
-    #theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
-    theta = np.linspace(0, 180, 181)
+    theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
+    #theta = np.linspace(0, 180, 181)
     back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
 
 
