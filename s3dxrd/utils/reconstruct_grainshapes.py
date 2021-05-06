@@ -5,26 +5,26 @@ import sys
 import matplotlib.pyplot as plt
 
 
-def FBP_slice( grains, flt, rcut, ymin, ystep, number_y_scans):
-    grain_masks=[]
-    grain_recons=[]
-    grain_recons_raw=[]
-    grain_sinos=[]
-    for i,g in enumerate(grains):
-        sinoangles, sino, recon = FBP_grain( g, flt, \
-                    ymin, ystep, number_y_scans )
-        normalised_recon = recon/recon.max()
+def FBP_slice(grains, flt, rcut, ymin, ystep, number_y_scans):
+    grain_masks = []
+    grain_recons = []
+    grain_recons_raw = []
+    grain_sinos = []
+    for i, g in enumerate(grains):
+        sinoangles, sino, recon = FBP_grain(g, flt, \
+                                            ymin, ystep, number_y_scans)
+        normalised_recon = recon / recon.max()
         grain_sinos.append(sino)
         grain_recons_raw.append(recon)
         grain_recons.append(normalised_recon)
         mask = normalised_recon > rcut
         grain_masks.append(mask)
-    update_grainshapes(grain_recons,grain_masks)
-    #totalsino=np.sum(grain_sinos, axis=0)
-    totalrecon=np.sum(grain_recons, axis=0)
+    update_grainshapes(grain_recons, grain_masks)
+    # totalsino=np.sum(grain_sinos, axis=0)
+    totalrecon = np.sum(grain_recons, axis=0)
 
     if 1:
-        #Plotting the sinoograms and the grains
+        # Plotting the sinograms and the grains
         f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
         a1.imshow(totalrecon, aspect='auto')
         a1.set(xlabel='angle', ylabel='dty/step')
@@ -34,32 +34,32 @@ def FBP_slice( grains, flt, rcut, ymin, ystep, number_y_scans):
     return grain_masks
 
 
-def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
+def FBP_grain(g, flt, ymin, ystep, number_y_scans):
     """
     Reconstruct a 2d grain shape from diffraction data using Filtered-Back-projection.
     """
 
     # Measured relevant data for the considered grain
-    omega = flt.omega[ g.mask ].copy()
+    omega = flt.omega[g.mask].copy()
     dty = flt.dty[g.mask].copy()
     sum_intensity = flt.sum_intensity[g.mask].copy()
 
-    if np.min(omega)<0 and np.max(omega)>0:
+    if np.min(omega) < 0 and np.max(omega) > 0:
         # Case 1: -180 to 180 rotation and positive y-scans we make
         # a transformation back into omega=[0 180] in three steps:
 
         # (I) Half the intensity for peaks entering the sinogram twice.
-        doublets_mask = dty<=np.abs(np.min(dty))
-        sum_intensity[doublets_mask] = sum_intensity[doublets_mask]*(1/2)
+        doublets_mask = dty <= np.abs(np.min(dty))
+        sum_intensity[doublets_mask] = sum_intensity[doublets_mask] * (1 / 2)
 
         # (II) Map the negative omega values back to positive values, [0 180]
         omega_mask = omega < 0
         omega[omega_mask] = omega[omega_mask] + 180
 
         # (III) Flip the sign of the y-scan coordinates with negative omega values.
-        dty[omega_mask]   = -dty[omega_mask]
+        dty[omega_mask] = -dty[omega_mask]
 
-    elif np.min(omega)>=0 and np.max(omega)<=180:
+    elif np.min(omega) >= 0 and np.max(omega) <= 180:
         # Case 2: 0 to 180 rotation and both negative and positive y-scans
         # nothing needs be done since this is the standrad tomography case
         pass
@@ -69,16 +69,16 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
                           y-translations are supported.")
 
     # Angular range into which to bin the data (step in sinogram)
-    angular_bin_size = 180./(number_y_scans)
+    angular_bin_size = 180. / (number_y_scans)
 
     # Indices in sinogram for the y-scan and angles
-    iy = np.round( (dty - ymin) / ystep ).astype(int)
-    iom = np.round( omega / angular_bin_size ).astype(int)
+    iy = np.round((dty - ymin) / ystep).astype(int)
+    iom = np.round(omega / angular_bin_size).astype(int)
 
     # Build the sinogram by accumulating intensity
-    sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float32 )
-    for i,I in enumerate(sum_intensity):
-        dty_index   = iy[i]
+    sinogram = np.zeros((number_y_scans, np.max(iom) + 1), np.float32)
+    for i, I in enumerate(sum_intensity):
+        dty_index = iy[i]
         omega_index = iom[i]
         sinogram[dty_index, omega_index] += I
 
@@ -86,27 +86,28 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
     # only to density but also to eta and theta and a lot of other stuff.
     normfactor = sinogram.max(axis=0)
 
-    normfactor[normfactor==0]=1.0
-    sinogram = sinogram/normfactor
+    normfactor[normfactor == 0] = 1.0
+    sinogram = sinogram / normfactor
 
     # Perform reconstruction by inverse radon transform of the sinogram
-    theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
-    #theta = np.linspace(0, 180, 181)
-    back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
+    theta = np.linspace(angular_bin_size / 2., 180. - angular_bin_size / 2., sinogram.shape[1])
+    # theta = np.linspace(0, 180, 181)
+    back_projection = iradon(sinogram, theta=theta, output_size=number_y_scans, circle=True)
 
     if 0:
-        fig,ax = plt.subplots(1,2, figsize=(15,5))
-        im = ax[0].imshow(sinogram,aspect="auto")
+        fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+        im = ax[0].imshow(sinogram, aspect="auto")
         ax[0].set_title("Sinogram")
-        ax[0].set_xlabel(r"$\omega$ bins ["+str(np.round(angular_bin_size,3))+r"$^o$]")
-        ax[0].set_ylabel(r"$\Delta y$ index (step="+str(ystep)+r"$\mu$ m)")
-        fig.colorbar(im,ax=ax[0])
-        im = ax[1].imshow(back_projection,aspect="equal")
-        fig.colorbar(im,ax=ax[1])
+        ax[0].set_xlabel(r"$\omega$ bins [" + str(np.round(angular_bin_size, 3)) + r"$^o$]")
+        ax[0].set_ylabel(r"$\Delta y$ index (step=" + str(ystep) + r"$\mu$ m)")
+        fig.colorbar(im, ax=ax[0])
+        im = ax[1].imshow(back_projection, aspect="equal")
+        fig.colorbar(im, ax=ax[1])
         ax[1].set_title("Backprojection")
         plt.show()
 
-    return [], sinogram, back_projection 
+    return [], sinogram, back_projection
+
 
 # def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
 #     """
@@ -182,7 +183,7 @@ def FBP_grain( g, flt, ymin, ystep, number_y_scans ):
 #     plt.show()
 #     return [], sinogram, back_projection 
 
-def update_grainshapes( grain_recons, grain_masks):
+def update_grainshapes(grain_recons, grain_masks):
     '''
     Update a set of grain masks based on their overlap and intensity.
     At each point the grain with strongest intensity is assigned
@@ -192,31 +193,32 @@ def update_grainshapes( grain_recons, grain_masks):
 
     for i in range(grain_recons[0].shape[0]):
         for j in range(grain_recons[0].shape[1]):
-            if conflict_exists(i,j,grain_masks):
+            if conflict_exists(i, j, grain_masks):
                 max_int = 0.0
-                leader  = None
-                for n,grain_recon in enumerate(grain_recons):
-                    if grain_recon[i,j]>max_int:
+                leader = None
+                for n, grain_recon in enumerate(grain_recons):
+                    if grain_recon[i, j] > max_int:
                         leader = n
-                        max_int = grain_recon[i,j]
+                        max_int = grain_recon[i, j]
 
-                #The losers are...
+                # The losers are...
                 for grain_mask in grain_masks:
-                    grain_mask[i,j]=0
+                    grain_mask[i, j] = 0
 
-                #And the winner is:
-                grain_masks[leader][i,j]=1
+                # And the winner is:
+                grain_masks[leader][i, j] = 1
 
-def conflict_exists( i,j,grain_masks):
+
+def conflict_exists(i, j, grain_masks):
     '''
     Help function for update_grainshapes()
     Checks if two grain shape masks overlap at index i,j
     '''
     claimers = 0
     for grain_mask in grain_masks:
-        if grain_mask[i,j]==1:
-            claimers+=1
-    if claimers>=2:
+        if grain_mask[i, j] == 1:
+            claimers += 1
+    if claimers >= 2:
         return True
     else:
         return False
