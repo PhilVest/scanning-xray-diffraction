@@ -102,11 +102,7 @@ def peaks_to_vectors(flt_paths,
     orientations = None
     measurement_grain_map = []
 
-    polygons = {}
-    polygon_orientations = {}
-    for grain_indx in np.unique(labeled_volume[labeled_volume > 0]):
-        polygons[str(grain_indx)] = {}
-        polygon_orientations[str(grain_indx)] = {}
+    polygons, polygon_orientations = polygon_representation(labeled_volume)
 
     for i, (zpos, peaks) in enumerate(zip(rm.zpos, rm.peak_stack)):
 
@@ -214,8 +210,13 @@ def cross_slice_map(rm):
     return labeled_volume, labeled_grains
 
 
-def polygon_representation():
-    pass
+def polygon_representation(labeled_volume):
+    polygons = {}
+    polygon_orientations = {}
+    for grain_indx in np.unique(labeled_volume[labeled_volume > 0]):
+        polygons[str(grain_indx)] = {}
+        polygon_orientations[str(grain_indx)] = {}
+    return polygons, polygon_orientations
 
 
 def parametric_integrals():
