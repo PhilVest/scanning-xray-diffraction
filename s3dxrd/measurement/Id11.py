@@ -21,7 +21,8 @@ from scipy.ndimage.morphology import binary_opening, binary_closing
 # IV)  Parametric integrals
 # V)   Average strains and directions.
 
-def peaks_to_vectors(flt_paths,
+def peaks_to_vectors(flt_paths_recon,
+                     flt_paths_strain,
                      zpos,
                      param_path,
                      ubi_paths,
@@ -36,7 +37,7 @@ def peaks_to_vectors(flt_paths,
     """Convert an x-ray diffraction dataset saved in the ImageD11 format to vector format
     
     Based on an inital guess of ubi matrices all data contained in a sereis of Id11 peak files
-    is analysed. Grian shapes are reconstructed and grain orientations refined. The data is converted
+    is analysed. Grain shapes are reconstructed and grain orientations refined. The data is converted
     into a vector format where each measurement is associated to a parametric line trhough the grain
     as well as an average approximate strain along the diffracting planes.
 
@@ -44,9 +45,11 @@ def peaks_to_vectors(flt_paths,
     maps using any of the in package supported regression techinques.
 
     Args:
-        flt_paths (:obj:`list` of :obj:`string`): Absolute file paths to Id11 peaks files. These must contain
+        flt_paths_recon (:obj:`list` of :obj:`string`): Absolute file paths to Id11 peaks files. These must contain
             a column named ```dty``` that stores the sample y-translations in units of microns. These translations
             should be centered at the rotation axis (dty=0 means the xray go through the rotation axis.)
+        flt_paths_strain (:obj:`list` of :obj:`string`): Contains the same information as flt_paths_recon, but
+        intended to be used for strain calculations instead of grain shape reconstruction.
         zpos (:obj:`list` of :obj:`float`): z-translations of sample corresponding to peaks in :obj:`flt_paths`.
         param_path (:obj:`string`): Absolute file path to Id11 parameters file.
         ubi_paths (:obj:`list` of :obj:`string`):  Absolute file paths to Id11 ubi matrices file.
@@ -93,7 +96,7 @@ def peaks_to_vectors(flt_paths,
             **labeled_grains** (:obj:`dict` of :obj:`dict` of :obj:`ImageD11 Grain`): Id11 grain for each grain slice in polygons.
 
     """
-    rm = map_and_recon(flt_paths, zpos, param_path, ubi_paths, omegastep, ymin, ymax, ystep, hkltol, nmedian, rcut)
+    rm = map_and_recon(flt_paths_recon, zpos, param_path, ubi_paths, omegastep, ymin, ymax, ystep, hkltol, nmedian, rcut)
 
     labeled_volume, labeled_grains = cross_slice_map(rm)
 
@@ -103,6 +106,10 @@ def peaks_to_vectors(flt_paths,
     measurement_grain_map = []
 
     polygons, polygon_orientations = polygon_representation(labeled_volume)
+
+    #This is probably the point where we want to change the data file.
+    rm.update_peak_stack(flt_paths_strain)
+    rm.update_reconstructed_grains(hkltol, nmedian)
 
     for i, (zpos, peaks) in enumerate(zip(rm.zpos, rm.peak_stack)):
 
@@ -123,9 +130,9 @@ def peaks_to_vectors(flt_paths,
 
             measurements = mc.convert_measurements(rm.params, grain, peaks, rm.ymin, rm.ystep, rm.omegastep)
 
-            orientations, U = parametric_integrals(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, all_nsegs,
-                         measurements, measurement_grain_map, zpos, sample_polygon, grain,
-                         grain_indx, orientations)
+            orientations, U = parametric_integrals(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L,
+                                                   all_nsegs, measurements, measurement_grain_map, zpos,
+                                                   sample_polygon, grain, grain_indx, orientations)
 
             polygons[str(grain_indx)][str(i)] = sample_polygon
             polygon_orientations[str(grain_indx)][str(i)] = U[0, :, :]
@@ -171,7 +178,6 @@ def map_and_recon(flt_paths, zpos, param_path, ubi_paths, omegastep, ymin, ymax,
             rm.grain_topology_mask[i][j] = binary_opening(rm.grain_topology_mask[i][j], structure=np.ones((3, 3)))
             rm.grain_topology_mask[i][j] = binary_closing(rm.grain_topology_mask[i][j], structure=np.ones((3, 3)))
     return rm
-
 
 def cross_slice_map(rm):
     # Cross slice mapping of grains, giving each grain a unique label so it can be tracked across z-slices.

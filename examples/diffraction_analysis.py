@@ -23,10 +23,8 @@ flt_paths  = ["./example_data/example_grain_"+"z"+str(i)+".flt" for i in range(l
 
 # We import the Id11 module to convert the peak files to vectors.
 from s3dxrd.measurement.Id11 import peaks_to_vectors
-vectors = peaks_to_vectors( flt_paths, zpos, param_path,
-                            ubi_paths, omegastep, ymin,
-                            ymax, ystep, hkltol, nmedian,
-                            rcut, save_path = "./example_results/vectors.pkl" )
+vectors = peaks_to_vectors(flt_paths, zpos, param_path, ubi_paths, omegastep, ymin, ymax, ystep, hkltol, nmedian, rcut,
+                           save_path="./example_results/vectors.pkl")
 
 # Vectors is now a dictionary with keys documented in s3dxrd.measurement.Id11.peaks_to_vectors()
 for key in vectors: print(key, " : ", type(vectors[key]))
