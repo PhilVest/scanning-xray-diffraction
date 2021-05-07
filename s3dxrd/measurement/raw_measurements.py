@@ -161,6 +161,8 @@ class RawMeasurements(object):
             self.grain_topology_mask.append( grain_topology_mask )
 
     def update_peak_stack(self, new_flt_path):
-        """Update the peak stack and the number of peaks by supplying a new data file."""
+        """Update the peak stack and the number of peaks by supplying a new data file.
+        Note:
+            This function mutates the attributes of the class and has no return."""
         self.peak_stack = [columnfile.columnfile(flt) for flt in new_flt_path]
         self.tot_nbr_peaks = sum([peaks.nrows for peaks in self.peak_stack])
