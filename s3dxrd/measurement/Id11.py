@@ -123,39 +123,9 @@ def peaks_to_vectors(flt_paths,
 
             measurements = mc.convert_measurements(rm.params, grain, peaks, rm.ymin, rm.ystep, rm.omegastep)
 
-            Yz = measurements['strain']
-            kappaz = measurements['kappa']
-            sig_mz = measurements['sig_m']
-            angles = measurements['omega']
-            dty = measurements['dty']
-
-            entryz, exitz, nhatz, Lz, nsegsz, bad_lines = top.get_integral_paths(angles, dty, zpos, \
-                                                                                 sample_polygon, show_geom=False)
-
-            # remove line integrals that missed sample
-            Yz = np.delete(Yz, bad_lines)
-            kappaz = np.delete(kappaz, bad_lines, axis=0)
-            sig_mz = np.delete(sig_mz, bad_lines)
-
-            # Build per line integral measurement orientation matrix (Nx3x3)
-            U = np.zeros((1, 3, 3))
-            U[0, :, :] = tools.ubi_to_u(grain.ubi)[:, :]
-            slice_orientations = np.repeat(U, len(Yz), axis=0)
-            if orientations is None:
-                orientations = slice_orientations
-            else:
-                orientations = np.concatenate([orientations, slice_orientations], axis=0)
-
-            measurement_grain_map.extend([grain_indx] * len(Yz))
-
-            all_Y.extend(Yz)
-            all_sig_m.extend(sig_mz)
-            all_entry.append(entryz)
-            all_exit.append(exitz)
-            all_nhat.append(nhatz)
-            all_kappa.append(kappaz)
-            all_L.extend(Lz)
-            all_nsegs.extend(nsegsz)
+            orientations, U = parametric_integrals(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, all_nsegs,
+                         measurements, measurement_grain_map, zpos, sample_polygon, grain,
+                         grain_indx, orientations)
 
             polygons[str(grain_indx)][str(i)] = sample_polygon
             polygon_orientations[str(grain_indx)][str(i)] = U[0, :, :]
@@ -219,9 +189,44 @@ def polygon_representation(labeled_volume):
     return polygons, polygon_orientations
 
 
-def parametric_integrals():
-    pass
+def parametric_integrals(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, all_nsegs,
+                         measurements, measurement_grain_map, zpos, sample_polygon, grain,
+                         grain_indx, orientations):
+    Yz = measurements['strain']
+    kappaz = measurements['kappa']
+    sig_mz = measurements['sig_m']
+    angles = measurements['omega']
+    dty = measurements['dty']
 
+    entryz, exitz, nhatz, Lz, nsegsz, bad_lines = top.get_integral_paths(angles, dty, zpos, \
+                                                                         sample_polygon, show_geom=False)
+
+    # remove line integrals that missed sample
+    Yz = np.delete(Yz, bad_lines)
+    kappaz = np.delete(kappaz, bad_lines, axis=0)
+    sig_mz = np.delete(sig_mz, bad_lines)
+
+    # Build per line integral measurement orientation matrix (Nx3x3)
+    U = np.zeros((1, 3, 3))
+    U[0, :, :] = tools.ubi_to_u(grain.ubi)[:, :]
+    slice_orientations = np.repeat(U, len(Yz), axis=0)
+    if orientations is None:
+        orientations = slice_orientations
+    else:
+        orientations = np.concatenate([orientations, slice_orientations], axis=0)
+
+    measurement_grain_map.extend([grain_indx] * len(Yz))
+
+    all_Y.extend(Yz)
+    all_sig_m.extend(sig_mz)
+    all_entry.append(entryz)
+    all_exit.append(exitz)
+    all_nhat.append(nhatz)
+    all_kappa.append(kappaz)
+    all_L.extend(Lz)
+    all_nsegs.extend(nsegsz)
+
+    return orientations, U
 
 def strains_and_directions():
     pass
