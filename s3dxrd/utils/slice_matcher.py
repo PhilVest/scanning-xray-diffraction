@@ -54,9 +54,6 @@ def match_and_label(pixelated_grains, id11_grains, angthres=np.cos(np.radians(3.
 
                     u1 = grains[str(indx)][str(i - 1)].u
                     u2 = id11_grains[i][j].u
-                    for l in range(3):
-                        temp = np.arccos(u1[:, l].dot(u2[:, l]))
-
                     angdiff = np.sum([u1[:, k].dot(u2[:, k]) for k in range(3)])
                     if angdiff < angthres:
                         sample[mask, i] = indx
