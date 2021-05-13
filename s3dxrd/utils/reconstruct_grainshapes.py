@@ -23,7 +23,7 @@ def FBP_slice(grains, flt, rcut, ymin, ystep, number_y_scans):
     # totalsino=np.sum(grain_sinos, axis=0)
     totalrecon = np.sum(grain_recons, axis=0)
 
-    if 1:
+    if 0:
         # Plotting the sinograms and the grains
         f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
         a1.imshow(totalrecon, aspect='auto')
