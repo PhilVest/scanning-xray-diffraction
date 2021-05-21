@@ -234,9 +234,6 @@ def parametric_integrals(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_ka
 
     return orientations, U
 
-def strains_and_directions():
-    pass
-
 
 def _repack(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, all_nsegs):
     '''_repack global measurement list into numpy arrays of desired format.
