@@ -4,7 +4,6 @@ from skimage.transform import iradon, radon
 import sys
 import matplotlib.pyplot as plt
 
-
 def FBP_slice(grains, flt, rcut, ymin, ystep, number_y_scans):
     grain_masks = []
     grain_recons = []
@@ -14,22 +13,23 @@ def FBP_slice(grains, flt, rcut, ymin, ystep, number_y_scans):
         sinoangles, sino, recon = FBP_grain(g, flt, \
                                             ymin, ystep, number_y_scans)
         normalised_recon = recon / recon.max()
-        grain_sinos.append(sino)
+        grain_sinos.append(sino[:, :61])
         grain_recons_raw.append(recon)
         grain_recons.append(normalised_recon)
         mask = normalised_recon > rcut
         grain_masks.append(mask)
     update_grainshapes(grain_recons, grain_masks)
-    # totalsino=np.sum(grain_sinos, axis=0)
+    totalsino = np.sum(grain_sinos, axis=0)
     totalrecon = np.sum(grain_recons, axis=0)
 
-    if 0:
+    if 1:
         # Plotting the sinograms and the grains
-        f, (a1, a2) = plt.subplots(1, 2, sharey=True, figsize=(8, 4))
-        a1.imshow(totalrecon, aspect='auto')
-        a1.set(xlabel='angle', ylabel='dty/step')
+        f, (a1, a2) = plt.subplots(1, 2, sharey='all', figsize=(8, 4))
+        a1.imshow(totalsino, aspect='equal')
+        a1.set(xlabel='angle/6°', ylabel='y-position/25 μm')
         a2.imshow(totalrecon, aspect='equal')
-        a2.set(xlabel="position/step", ylabel='position/step')
+        a2.set(xlabel="x-position/25 μm", ylabel='y-position/25 μm')
+        plt.tick_params(labelbottom=True, labelleft=True)
         plt.show()
     return grain_masks
 
