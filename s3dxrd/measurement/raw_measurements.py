@@ -120,6 +120,25 @@ class RawMeasurements(object):
             peak_mapper.map_peaks(flt, gs, self.params, self.omegastep, \
                                         hkltol, nmedian, self.ymin, self.ystep, self.number_y_scans)
 
+    def update_reconstructed_grains(self, hkltol, nmedian ):
+        """Update the diffraction peak to grain mapping while keeping the previously created grain
+        reconstructions. The peak stack supplied as argument should be the peaks intended to be used for
+        strain calculations.
+
+        Note:
+            This function mutates the attributes of the class and has no return.
+
+        Args:
+            hkltol (float): Tolerance on Miller indices (hkl) to match a peak.
+            nmedian (float): Outlier threshold. If any of the diffraction angles
+                (2*theta, omega, eta) are more than nmedian times deviating from the
+                median deviation (between model and measurement) the peak is considered
+                an outlier and removed.
+        """
+        for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
+            peak_mapper.update_reconstructed_grains(flt, gs, self.params, self.omegastep, \
+                                        hkltol, nmedian)
+
     def reconstruct_grain_topology(self, rcut):
         """Perform Filtered Back Projection to approximate grain shapes.
 
@@ -140,3 +159,10 @@ class RawMeasurements(object):
             grain_topology_mask = reconstruct_grainshapes.FBP_slice(gs, flt, rcut, self.ymin, \
                                         self.ystep, self.number_y_scans)                   
             self.grain_topology_mask.append( grain_topology_mask )
+
+    def update_peak_stack(self, new_flt_path):
+        """Update the peak stack and the number of peaks by supplying a new data file.
+        Note:
+            This function mutates the attributes of the class and has no return."""
+        self.peak_stack = [columnfile.columnfile(flt) for flt in new_flt_path]
+        self.tot_nbr_peaks = sum([peaks.nrows for peaks in self.peak_stack])

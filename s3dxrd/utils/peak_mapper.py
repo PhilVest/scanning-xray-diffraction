@@ -44,6 +44,31 @@ def map_peaks( flt, grains, params, omegastep, hkltol, nmedian, ymin, ystep, num
 
     tth, eta, gve = update_cols_per_grain( flt, params, omslop, grains )
 
+
+def update_reconstructed_grains(flt, grains, params, omegastep, hkltol, nmedian):
+    """Updates the assigned peaks by using a different data set, while keeping the original grain reconstructions.
+    This allows for one data set to be used when reconstructing the grains and another to be used when calculating the
+    strains."""
+    omslop = omegastep / 2.
+
+    tth, eta, gve = initiate_cols(flt, params, omslop)
+
+    for i, gr in enumerate(grains):
+        tth, eta, gve = grain_fitter.get_peak_quantities(flt, params, gr)
+        assign_peaks_to_grain(gr, gve, flt, params, nmedian, hkltol)
+        # gr.mask is updated here based on the new data. No need to reset them separately.
+    discard_overlaping_spots(grains, gve, flt, params, nmedian, hkltol)
+
+    init_assigned_peaks = 0
+    for i, gr in enumerate(grains):
+        init_assigned_peaks += np.sum(gr.mask)
+
+    # Update grain ubi based on the newly assigned peak sets
+    for i, gr in enumerate(grains):
+        grain_fitter.fit_one_grain(gr, flt, params)
+
+    update_cols_per_grain(flt, params, omslop, grains)
+
 def initiate_cols( flt, pars, OMSLOP, weights=True  ):
     tth, eta, gve = grain_fitter.get_peak_quantities( flt, pars )
     flt.addcolumn( tth  , "tth" )

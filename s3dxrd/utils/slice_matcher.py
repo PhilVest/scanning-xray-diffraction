@@ -2,7 +2,8 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 
-def match_and_label( pixelated_grains, id11_grains, angthres=3.0 ):
+
+def match_and_label(pixelated_grains, id11_grains, angthres=3*np.cos(np.radians(1.0))):
     """Segment a stack of 2d grain slices into 3d grains by orientation and z-overlap.
 
     This function iterates over stacks for pixelated grain masks and corresponding Id11
@@ -33,40 +34,36 @@ def match_and_label( pixelated_grains, id11_grains, angthres=3.0 ):
 
     grain_indx = 1
     grains = {}
-    dx,dy = pixelated_grains[0][0].shape
-    sample = np.zeros( (dx, dy, len(pixelated_grains) ), dtype=int )
+    dx, dy = pixelated_grains[0][0].shape
+    sample = np.zeros((dx, dy, len(pixelated_grains)), dtype=int)
 
     for j in range(len(pixelated_grains[0])):
         mask = pixelated_grains[0][j]
-        sample[mask,0] = grain_indx
-        grains[str(grain_indx)] = { str(0) : id11_grains[0][j] }
+        sample[mask, 0] = grain_indx
+        grains[str(grain_indx)] = {str(0): id11_grains[0][j]}
         grain_indx += 1
 
     for i in range(1, sample.shape[2]):
         for j in range(len(pixelated_grains[i])):
             found_match = False
             mask = pixelated_grains[i][j]
-            overlap = ( sample[:,:,i-1] * mask ) > 0
-            if np.sum( overlap ) > 0:
-                indices = np.unique(sample[overlap,i-1])
-                for indx in indices[indices!=0]:
+            overlap = (sample[:, :, i - 1] * mask) > 0
+            if np.sum(overlap) > 0:
+                indices = np.unique(sample[overlap, i - 1])
+                for indx in indices[indices != 0]:
 
-                    u1 = grains[str(indx)][str(i-1)].u
+                    u1 = grains[str(indx)][str(i - 1)].u
                     u2 = id11_grains[i][j].u
-                    angdiff = np.sum( [ np.degrees( np.arccos(u1[:,k].dot(u2[:,k])) ) for k in range(3) ] )
-                    if angdiff < angthres:
-                        sample[mask,i] = indx
+                    angdiff = np.sum([u1[:, k].dot(u2[:, k]) for k in range(3)])
+                    if angdiff > angthres:
+                        sample[mask, i] = indx
                         found_match = True
                         grains[str(indx)][str(i)] = id11_grains[i][j]
                         break
 
             if not found_match:
-                sample[mask,i] = grain_indx
-                grains[str(grain_indx)] = { str(i) : id11_grains[i][j] }
+                sample[mask, i] = grain_indx
+                grains[str(grain_indx)] = {str(i): id11_grains[i][j]}
                 grain_indx += 1
-            
+
     return sample, grains
-
-
-
-
