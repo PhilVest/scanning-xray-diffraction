@@ -16,10 +16,17 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
         mask = normalised_recon > rcut
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
+    if 0:
+        added = np.sum(grain_masks, axis=0)
+        #added[added > 2.1e-1] = 1
+        #added[added < 2.1e-1] = 0
+        fig, ax = plt.subplots(1, 1)
+        im = ax.imshow(added, aspect='equal')
+        plt.show()
     return grain_masks
 
 
-def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
+def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [1.0, 1.0]):
     """
     Reconstruct a 2d grain shape from diffraction data using Filtered-Back-projection.
     """
@@ -27,6 +34,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
     # Measured relevant data for the considered grain
     omega = flt.omega[ g.mask ].copy()
     dty = flt.dty[g.mask].copy()
+    pixels_per_peak = flt.pixels_per_peak[g.mask].copy()
     sum_intensity = flt.sum_intensity[g.mask].copy()
 
     if np.min(omega)<0 and np.max(omega)>0:
@@ -35,6 +43,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
 
         # (I) Half the intensity for peaks entering the sinogram twice.
         doublets_mask = dty<=np.abs(np.min(dty))
+        pixels_per_peak[doublets_mask] = pixels_per_peak[doublets_mask]*(1/2)
         sum_intensity[doublets_mask] = sum_intensity[doublets_mask]*(1/2)
 
         # (II) Map the negative omega values back to positive values, [0 180]
@@ -60,23 +69,29 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
     iy = np.round( (dty - ymin) / ystep ).astype(int)
     iom = np.round( omega / angular_bin_size ).astype(int)
 
-    # Build the sinogram by accumulating intensity
-    sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float )
-    for i,I in enumerate(sum_intensity):
-        dty_index   = iy[i]
-        omega_index = iom[i]
-        sinogram[dty_index, omega_index] += I
+    recons = [None, None]
+    for i, measure in enumerate([pixels_per_peak, sum_intensity]):
+        # Build the sinogram by accumulating intensity
+        sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float )
+        for j,I in enumerate(measure):
+            dty_index   = iy[j]
+            omega_index = iom[j]
+            sinogram[dty_index, omega_index] += I
 
-    # Normalise the sinogram to account for the intensity not being proportional
-    # only to density but also to eta and theta and a lot of other stuff.
-    normfactor = sinogram.max(axis=0)
+        # Normalise the sinogram to account for the intensity not being proportional
+        # only to density but also to eta and theta and a lot of other stuff.
+        normfactor = sinogram.max(axis=0)
 
-    normfactor[normfactor==0]=1.0
-    sinogram = sinogram/normfactor
+        normfactor[normfactor==0]=1.0
+        sinogram = sinogram/normfactor
 
-    # Perform reconstruction by inverse radon transform of the sinogram
-    theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
-    back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
+        # Perform reconstruction by inverse radon transform of the sinogram
+        theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
+        back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
+        back_projection = back_projection/back_projection.max()
+        recons[i] = back_projection * recon_weights[i]
+    
+    recon = np.sum(recons, axis=0)
 
     if 0:
         fig,ax = plt.subplots(1,2, figsize=(15,5))
@@ -90,7 +105,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
         ax[1].set_title("Backprojection")
         plt.show()
 
-    return [], sinogram, back_projection 
+    return [], sinogram, recon
 
 # def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
 #     """
