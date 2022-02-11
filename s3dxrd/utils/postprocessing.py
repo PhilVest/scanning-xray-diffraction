@@ -1,6 +1,7 @@
 import datetime
 import math
 import numpy
+import pathlib
 from pyevtk.hl import pointsToVTK
 import numpy as np
 import vtkmodules.vtkIOXML as vtk_xml
@@ -33,7 +34,7 @@ def vtk_to_numpy(vtkfile, plot=False):
     filereader.Update()
 
     data = filereader.GetOutput()
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY"]
+    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "Sigma_1", "Sigma_2", "Sigma_3"]
     coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
     values = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
 
@@ -401,3 +402,24 @@ def find_normals_mc(voxels, boundary_points, boundary_data, scale_mat, inv_dir_m
                   norm_from_cms[:, 0], norm_from_cms[:, 1], norm_from_cms[:, 2], length=300, color='g')
         plt.show()
     return avg_normals, normal_values, deviation
+
+def sum_z_stress(directory_path, nbr_z_scans, stepsize):
+    """
+    Iterate through the folder where the resulting .vtu files from the stress reconstructions are kept, 
+    and sum the stresses in the z-direction for each slice. The sum of the strains should be equal to the externally applied load. 
+
+    :param directory_location: Location of the folder containing the .vtu files to be processed. 
+        The name of the files must contain the word "stress" to distinguish them from the strain reconstructions.
+    :type directory_location: str
+    """
+    sum_z_stress = np.zeros(nbr_z_scans)
+    print(np.shape(sum_z_stress))
+    for file in pathlib.Path(directory_path).iterdir():
+        if file.name.__contains__("stress") and file.name.endswith(".vtu"):
+            stresses, coords = vtk_to_numpy(str(file.relative_to("")))
+            z_stresses = stresses[2, :]
+            z_coords = coords[:, 2]
+            
+            for pair in zip(z_coords, z_stresses):
+                sum_z_stress[(pair[0]/stepsize).astype(int)] += pair[1]*((1e-6*stepsize)**2)
+    print(np.round(sum_z_stress)) 
