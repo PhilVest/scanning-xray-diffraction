@@ -125,7 +125,7 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
     _check_bc_coord_equality(boundary_coords, coords, file)
     keys = [tuple(np.round(c, 5)) for c in coords]
     data_dict = dict(zip(keys, values.T))
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY"]
+    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
     boundary_data = np.vstack([data_dict[tuple(np.round(bc, 5))] for bc in boundary_coords])
 
     # For testing purposes only, requires previous calculation of the boundary points.
@@ -425,3 +425,21 @@ def sum_z_stress(directory_path, nbr_z_scans, stepsize):
             for pair in zip(z_coords, z_stresses):
                 sum_z_stress[(pair[0] / stepsize).astype(int)] += pair[1] * ((1e-6 * stepsize) ** 2)
     print(np.round(sum_z_stress))
+
+
+def append_quantities(input, output, titles, values):
+    filereader = vtk_xml.vtkXMLUnstructuredGridReader()
+    filereader.SetFileName(input)
+    filereader.Update()
+
+    data = filereader.GetOutput()
+    coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
+    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
+    vals = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
+    components += titles
+    vals.append(values)
+    vals = np.ascontiguousarray(vals)
+    coords = np.ascontiguousarray(coords.T)
+
+    pointsToVTK(output, coords[0, :], coords[1, :], coords[2, :], dict(zip(components, vals)))
+
