@@ -26,7 +26,7 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
     return grain_masks
 
 
-def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [1.0, 1.0]):
+def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [1.5, 1.0]):
     """
     Reconstruct a 2d grain shape from diffraction data using Filtered-Back-projection.
     """
