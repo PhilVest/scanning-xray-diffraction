@@ -108,9 +108,21 @@ def peaks_to_vectors(flt_paths,
 
     # Cleanup the recons from floating pixels and holes.
     for i in range(len(rm.grain_topology_mask)):
+        #added = np.sum(rm.grain_topology_mask[i], axis=0)
+        #fig, ax = plt.subplots(1, 1)
+        #im = ax.imshow(added, aspect='equal')
+        #ax.set_title("Before morphological operations")
+        #plt.show()
+
         for j in range(len(rm.grain_topology_mask[i])):
             rm.grain_topology_mask[i][j] = binary_opening(rm.grain_topology_mask[i][j], structure=np.ones((3, 3)))
             rm.grain_topology_mask[i][j] = binary_closing(rm.grain_topology_mask[i][j], structure=np.ones((3, 3)))
+
+        #added = np.sum(rm.grain_topology_mask[i], axis=0)
+        #fig, ax = plt.subplots(1, 1)
+        #im = ax.imshow(added, aspect='equal')
+        #ax.set_title("After morphological operations")
+        #plt.show()
 
     # Cross slice mapping of grains, giving each grain a unique label so it can be tracked across z-slices.
     print('Cross slice mapping grains...')
