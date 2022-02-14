@@ -82,7 +82,7 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
 
     max_vals = np.amax(voxel_coords[:3, :], axis=1)
     min_vals = np.amin(voxel_coords[:3, :], axis=1)
-    shift = np.array(_min_absolute_value(max_vals, min_vals))
+    shift = min_vals  # np.array(_min_absolute_value(max_vals, min_vals))
     transform_direction = np.array([[1., 0, 0, -shift[0]], [0, 1., 0, -shift[1]], [0, 0, 1., -shift[2]], [0, 0, 0, 1.]])
     inv_transform_direction = np.array([[1., 0, 0, shift[0] - 1], [0, 1., 0, shift[1] - 1],
                                         [0, 0, 1., shift[2] - 1], [0, 0, 0, 1.]])
@@ -101,7 +101,7 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
 
     print("Execution time for boundary searching is: " + str(t2 - t1))
 
-    boundary_voxel_coords = np.vstack(np.where(boundary_voxels == 1))
+    boundary_voxel_coords = np.vstack(np.where(boundary_voxels == 1.))
     boundary_voxel_coords = np.pad(boundary_voxel_coords, ((0, 1), (0, 0)), constant_values=1)
 
     boundary_coords = ((transform_scale @ (inv_transform_direction @ boundary_voxel_coords))[:3, :]).T
@@ -141,7 +141,8 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
 def _min_absolute_value(a1, a2):
     stacked = np.vstack((a1, a2))
     indices = np.argmin(np.absolute(stacked), axis=0)
-    return [int(stacked[indices[0], 0]), int(stacked[indices[1], 1]), int(stacked[indices[2], 2])]
+    return [np.round(stacked[indices[0], 0]).astype(int), np.round(stacked[indices[1], 1]).astype(int),
+            np.round(stacked[indices[2], 2]).astype(int)]
 
 
 def find_boundary(voxels):
@@ -159,9 +160,11 @@ def find_boundary(voxels):
     for i in range(1, dim[0] - 1):
         for j in range(1, dim[1] - 1):
             for k in range(1, dim[2] - 1):
-                if voxels[i, j, k] == 1:
-                    if np.any(voxels[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2] == 0.):
-                        boundary[i, j, k] = 1
+                if np.isclose(voxels[i, j, k], 1.):
+                    if i == 3 and j == 0 and k == 34:
+                        pass
+                    if np.any(np.isclose(voxels[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2], 0.)):
+                        boundary[i, j, k] = 1.
                 else:
                     continue
 
