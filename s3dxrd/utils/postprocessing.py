@@ -424,7 +424,7 @@ def sum_z_stress(directory_path, nbr_z_scans, stepsize):
 
             for pair in zip(z_coords, z_stresses):
                 sum_z_stress[(pair[0] / stepsize).astype(int)] += pair[1] * ((1e-6 * stepsize) ** 2)
-    print(np.round(sum_z_stress))
+    return np.round(sum_z_stress)
 
 
 def append_quantities(input, output, titles, values):
