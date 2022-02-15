@@ -5,16 +5,19 @@ import sys
 import matplotlib.pyplot as plt
 
 
-def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
+def FBP_slice(grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, recon_weights=None):
     grain_masks=[]
     grain_recons=[]
+    grain_contacts = []
     for i,g in enumerate(grains):
-        sinoangles, sino, recon = FBP_grain( g, flt, \
-                    ymin, ystep, omegastep, number_y_scans )
+        sinoangles, sino, recon, contact = FBP_grain( g, flt, \
+                    ymin, ystep, omegastep, number_y_scans, recon_weights)
+
         normalised_recon = recon/recon.max()
         grain_recons.append(normalised_recon)
         mask = normalised_recon > rcut
         grain_masks.append(mask)
+        grain_contacts.append(contact > rcut)
     update_grainshapes(grain_recons,grain_masks)
     if 0:
         added = np.sum(grain_masks, axis=0)
@@ -23,13 +26,15 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans):
         fig, ax = plt.subplots(1, 1)
         im = ax.imshow(added, aspect='equal')
         plt.show()
-    return grain_masks
+    return grain_masks, grain_contacts
 
 
-def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [1.5, 1.0]):
+def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights=None):
     """
     Reconstruct a 2d grain shape from diffraction data using Filtered-Back-projection.
     """
+    if recon_weights is None:
+        recon_weights = [1.0, 1.0]
 
     # Measured relevant data for the considered grain
     omega = flt.omega[ g.mask ].copy()
@@ -70,6 +75,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [
     iom = np.round( omega / angular_bin_size ).astype(int)
 
     recons = [None, None]
+    contact_recons = None
     for i, measure in enumerate([pixels_per_peak, sum_intensity]):
         # Build the sinogram by accumulating intensity
         sinogram = np.zeros( ( number_y_scans, np.max(iom)+1 ), np.float )
@@ -89,8 +95,12 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [
         theta = np.linspace( angular_bin_size/2., 180. - angular_bin_size/2., sinogram.shape[1] )
         back_projection = iradon( sinogram, theta=theta, output_size=number_y_scans, circle=True )
         back_projection = back_projection/back_projection.max()
+
+        if i == 0:
+            contact_recons = back_projection
+
         recons[i] = back_projection * recon_weights[i]
-    
+
     recon = np.sum(recons, axis=0)
 
     if 0:
@@ -105,7 +115,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights = [
         ax[1].set_title("Backprojection")
         plt.show()
 
-    return [], sinogram, recon
+    return [], sinogram, recon, contact_recons
 
 # def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans ):
 #     """

@@ -33,6 +33,7 @@ def peaks_to_vectors(flt_paths,
                      nmedian=5,
                      rcut=0.2,
                      nprocs=1,
+                     recon_weights=None,
                      save_path=None):
     """Convert an x-ray diffraction dataset saved in the ImageD11 format to vector format
 
@@ -101,10 +102,10 @@ def peaks_to_vectors(flt_paths,
     rm = raw_measurements.RawMeasurements(flt_paths, zpos, param_path, ubi_paths, omegastep, ymin, ymax, ystep)
 
     print('Mapping a total of ' + str(rm.tot_nbr_peaks) + ' peaks...')
-    rm.map_peaks(hkltol, nmedian)
+    rm.map_peaks(hkltol, nmedian, recon_weights)
 
     print('Reconstructing grain topologies...')
-    rm.reconstruct_grain_topology(rcut)
+    rm.reconstruct_grain_topology(rcut, recon_weights)
 
     # Cleanup the recons from floating pixels and holes.
     for i in range(len(rm.grain_topology_mask)):
@@ -123,6 +124,10 @@ def peaks_to_vectors(flt_paths,
         #im = ax.imshow(added, aspect='equal')
         #ax.set_title("After morphological operations")
         #plt.show()
+
+    for ii in range(len(rm.grain_contact_mask)):
+        for jj in range(len(rm.grain_contact_mask[ii])):
+            pass
 
     # Cross slice mapping of grains, giving each grain a unique label so it can be tracked across z-slices.
     print('Cross slice mapping grains...')
