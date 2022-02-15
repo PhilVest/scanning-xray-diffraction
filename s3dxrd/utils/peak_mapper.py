@@ -7,7 +7,7 @@ from . import scanning_transform
 from . import reconstruct_grainshapes
 
 
-def map_peaks( flt, grains, params, omegastep, hkltol, nmedian, ymin, ystep, number_y_scans ):
+def map_peaks( flt, grains, params, omegastep, hkltol, nmedian, ymin, ystep, number_y_scans, recon_weights):
     omslop = omegastep/2.
     
     tth, eta, gve = initiate_cols( flt, params, omslop )
@@ -32,7 +32,8 @@ def map_peaks( flt, grains, params, omegastep, hkltol, nmedian, ymin, ystep, num
         for i,gr in enumerate(grains):
 
             # Grain centroids can be computed based on the sinogram.
-            _, gr.sino, gr.recon = reconstruct_grainshapes.FBP_grain( gr, flt, ymin, ystep, omegastep, number_y_scans )
+            _, gr.sino, gr.recon = reconstruct_grainshapes.FBP_grain( gr, flt, ymin, ystep, omegastep, number_y_scans,
+                                                                      recon_weights)
 
             tth, eta, gve = grain_fitter.get_peak_quantities( flt, params, gr )
             assign_peaks_to_grain( gr, gve, flt, params, nmedian,  hkltol )
