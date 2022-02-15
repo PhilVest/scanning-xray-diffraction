@@ -25,8 +25,6 @@ def vtk_to_numpy(vtkfile, plot=False):
     :rtype: tuple[ndarray, ndarray]
 
     """
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
 
     filereader = vtk_xml.vtkXMLUnstructuredGridReader()
     filereader.SetFileName(vtkfile)
@@ -38,6 +36,8 @@ def vtk_to_numpy(vtkfile, plot=False):
     values = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
 
     if plot:
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
         xcoords = [arr[0] for arr in coords]
         ycoords = [arr[1] for arr in coords]
         zcoords = [arr[2] for arr in coords]
