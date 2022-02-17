@@ -98,7 +98,7 @@ class RawMeasurements(object):
         self.params.parameters['t_y'] = None
         self.params.parameters['t_z'] = None
 
-    def map_peaks(self, hkltol, nmedian ):
+    def map_peaks(self, hkltol, nmedian, recon_weights):
         """Perform Grain centroid refinement and diffraction peak to grain mappings.
 
         This method refines the semi-raw diffraction data contained by the input 
@@ -118,9 +118,9 @@ class RawMeasurements(object):
         """
         for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
             peak_mapper.map_peaks(flt, gs, self.params, self.omegastep, \
-                                        hkltol, nmedian, self.ymin, self.ystep, self.number_y_scans)
+                                        hkltol, nmedian, self.ymin, self.ystep, self.number_y_scans, recon_weights)
 
-    def reconstruct_grain_topology(self, rcut):
+    def reconstruct_grain_topology(self, rcut, recon_weights):
         """Perform Filtered Back Projection to approximate grain shapes.
 
         The recorded intensity of the diffraction peaks are used to create
@@ -139,5 +139,5 @@ class RawMeasurements(object):
         for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
             grain_topology_mask = reconstruct_grainshapes.FBP_slice(gs, flt,       \
                                         self.omegastep, rcut, self.ymin, \
-                                        self.ystep, self.number_y_scans)                   
+                                        self.ystep, self.number_y_scans, recon_weights)
             self.grain_topology_mask.append( grain_topology_mask )
