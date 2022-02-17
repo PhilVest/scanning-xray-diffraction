@@ -161,8 +161,6 @@ def find_boundary(voxels):
         for j in range(1, dim[1] - 1):
             for k in range(1, dim[2] - 1):
                 if np.isclose(voxels[i, j, k], 1.):
-                    if i == 3 and j == 0 and k == 34:
-                        pass
                     if np.any(np.isclose(voxels[i - 1:i + 2, j - 1:j + 2, k - 1:k + 2], 0.)):
                         boundary[i, j, k] = 1.
                 else:
@@ -375,8 +373,6 @@ def find_normals_mc(voxels, boundary_points, boundary_data, scale_mat, inv_dir_m
         norm_from_cms[l] = t / np.linalg.norm(t)
 
     deviation = np.array([np.dot(norm_from_cms[i], avg_normals[i]) for i in range(np.shape(avg_normals)[0])])
-    for t in norm_from_cms:
-        print(np.linalg.norm(t))
 
     if plot:
         xverts = [arr[0] for arr in verts_coords]
