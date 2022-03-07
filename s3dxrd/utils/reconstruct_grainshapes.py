@@ -16,6 +16,14 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, recon_
         mask = normalised_recon > rcut
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
+    
+    if 1:
+        fig,ax = plt.subplots(1,2, figsize=(15,5))
+        im = ax[0].imshow(np.sum(grain_masks, axis=0),aspect="auto")
+        fig.colorbar(im,ax=ax[0])
+        im = ax[1].imshow(np.sum(grain_recons, axis=0),aspect="equal")
+        fig.colorbar(im,ax=ax[1])
+        plt.show()
 
     return grain_masks
 
