@@ -88,8 +88,8 @@ class RawMeasurements(object):
         self.number_y_scans = np.round((abs(ymax-ymin)/ystep)).astype(int)+1
         for p in self.peak_stack: 
             p.dty[:] = p.dty - ymin - self.ystep*(self.number_y_scans//2)
-        self.ymin = -ystep*(self.number_y_scans//2)
-        self.ymax =  ystep*(self.number_y_scans//2)
+        self.ymin = ymin #-ystep*(self.number_y_scans//2)
+        self.ymax = ymax #ystep*(self.number_y_scans//2)
         self.grain_topology_mask = None
 
         self.params.parameters['ystep'] = self.ystep
@@ -117,8 +117,12 @@ class RawMeasurements(object):
                 an outlier and removed.
         """
         for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
-            peak_mapper.map_peaks(flt, gs, self.params, self.omegastep, \
+            try:
+                peak_mapper.map_peaks(flt, gs, self.params, self.omegastep, \
                                         hkltol, nmedian, self.ymin, self.ystep, self.number_y_scans, recon_weights)
+            except ValueError:
+                print("ValueError at zpos", str(dtz))
+                raise ValueError
 
     def reconstruct_grain_topology(self, rcut, recon_weights):
         """Perform Filtered Back Projection to approximate grain shapes.
