@@ -249,11 +249,11 @@ def repack(all_entry, all_exit, all_nhat, all_L, all_nsegs):
     nsegs = np.array(all_nsegs).reshape(1, N)
     L = np.array(all_L).reshape(1, N)
 
-    entry = np.zeros((3 * p, N))
+    entry = np.full((3 * p, N), np.nan)
     for i, en in enumerate(all_entry):
         entry[:len(en[:]), i] = en[:]
 
-    exit = np.zeros((3 * p, N))
+    exit = np.full((3 * p, N), np.nan)
     for i, ex in enumerate(all_exit):
         exit[:len(ex[:]), i] = ex[:]
 
