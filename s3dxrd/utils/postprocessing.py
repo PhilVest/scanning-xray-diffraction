@@ -426,10 +426,9 @@ def append_quantities(input, output, components, titles, values):
 
     data = filereader.GetOutput()
     coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
     vals = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
     components += titles
-    vals.append(values)
+    vals += values
     vals = np.ascontiguousarray(vals)
     coords = np.ascontiguousarray(coords.T)
 
