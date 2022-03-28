@@ -13,7 +13,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from s3dxrd.utils.stiffness import vec_to_tens
 
 
-def vtk_to_numpy(vtkfile, plot=False):
+def vtk_to_numpy(vtkfile, components, plot=False):
     """
     Import point cloud data stored in a VTK file to a list of Numpy arrays.
 
@@ -21,6 +21,8 @@ def vtk_to_numpy(vtkfile, plot=False):
     :type plot: bool
     :param vtkfile: The path of the file containing the original data as an unstructured grid.
     :type vtkfile: str
+    :param components: Name of the components of the input data, e.g. [XX, XY, XZ...]
+    :type components: list[str]
     :return: Numpy array containing the data provided in the input file.
     :rtype: tuple[ndarray, ndarray]
 
@@ -31,7 +33,6 @@ def vtk_to_numpy(vtkfile, plot=False):
     filereader.Update()
 
     data = filereader.GetOutput()
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY"]
     coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
     values = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
 
