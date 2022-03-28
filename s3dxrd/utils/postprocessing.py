@@ -401,3 +401,36 @@ def find_normals_mc(voxels, boundary_points, boundary_data, scale_mat, inv_dir_m
                   norm_from_cms[:, 0], norm_from_cms[:, 1], norm_from_cms[:, 2], length=300, color='g')
         plt.show()
     return avg_normals, normal_values, deviation
+
+
+def append_quantities(input, output, components, titles, values):
+    """
+    Converts a given .vtu file into a numpy array, appends another set of data which is referred to by the names in
+    "titles" and writes a new .vtu file containing the data in the original file and the new data.
+
+    :param input: File path to a .vtu file with the data se to which more values should be added.
+    :type input: str
+    :param output: File path to the .vtu file to be written.
+    :type output: str
+    :param titles: The names that the new data will be referred to as a list of strings, one string per data set.
+    :type titles: list[str]
+    :param values: The new values as a list of numpy arrays where each array corresponds to a string in "titles".
+    :type values: list[ndarray]
+    :param components: The names of the data which is contained in the file referred to in "input"
+    :type components: list[str]
+    :return:
+    """
+    filereader = vtk_xml.vtkXMLUnstructuredGridReader()
+    filereader.SetFileName(input)
+    filereader.Update()
+
+    data = filereader.GetOutput()
+    coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
+    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
+    vals = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
+    components += titles
+    vals.append(values)
+    vals = np.ascontiguousarray(vals)
+    coords = np.ascontiguousarray(coords.T)
+
+    pointsToVTK(output, coords[0, :], coords[1, :], coords[2, :], dict(zip(components, vals)))
