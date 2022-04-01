@@ -124,7 +124,7 @@ class RawMeasurements(object):
                 print("ValueError at zpos", str(dtz))
                 raise ValueError
 
-    def reconstruct_grain_topology(self, rcut, recon_weights):
+    def reconstruct_grain_topology(self, rcut, mode, recon_weights):
         """Perform Filtered Back Projection to approximate grain shapes.
 
         The recorded intensity of the diffraction peaks are used to create
@@ -142,6 +142,6 @@ class RawMeasurements(object):
         self.grain_topology_mask=[]
         for gs, flt, dtz in zip( self.grain_slices, self.peak_stack, self.zpos ):
             grain_topology_mask = reconstruct_grainshapes.FBP_slice(gs, flt,       \
-                                        self.omegastep, rcut, self.ymin, \
-                                        self.ystep, self.number_y_scans, recon_weights)
+                                        self.omegastep, rcut[int(np.round(dtz/self.ystep))], self.ymin, \
+                                        self.ystep, self.number_y_scans, mode, recon_weights)
             self.grain_topology_mask.append( grain_topology_mask )
