@@ -29,6 +29,8 @@ def peaks_to_vectors(flt_paths,
                      ymin,
                      ymax,
                      ystep,
+                     mode,
+                     angthres,
                      hkltol=0.05,
                      nmedian=5,
                      rcut=0.2,
@@ -105,7 +107,7 @@ def peaks_to_vectors(flt_paths,
     rm.map_peaks(hkltol, nmedian, recon_weights)
 
     print('Reconstructing grain topologies...')
-    rm.reconstruct_grain_topology(rcut, recon_weights)
+    rm.reconstruct_grain_topology(rcut, mode, recon_weights)
 
     # Cleanup the recons from floating pixels and holes.
     for i in range(len(rm.grain_topology_mask)):
@@ -115,7 +117,7 @@ def peaks_to_vectors(flt_paths,
 
     # Cross slice mapping of grains, giving each grain a unique label so it can be tracked across z-slices.
     print('Cross slice mapping grains...')
-    labeled_volume, labeled_grains = slice_matcher.match_and_label(rm.grain_topology_mask, rm.grain_slices)
+    labeled_volume, labeled_grains = slice_matcher.match_and_label(rm.grain_topology_mask, rm.grain_slices, angthres)
 
     print('Converting diffraction peaks to GP-XRD quanteties...')
     all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, all_nsegs = [], [], [], [], [], [], [], []
@@ -221,17 +223,17 @@ def _repack(all_Y, all_sig_m, all_entry, all_exit, all_nhat, all_kappa, all_L, a
     sig_m = np.array(all_sig_m).reshape(N, 1)
     L = np.concatenate(all_L).reshape(1, N)
 
-    entry = np.zeros((3 * p, all_entry[0].shape[1]))
+    entry = np.full((3 * p, all_entry[0].shape[1]), np.nan)
     entry[:all_entry[0].shape[0], :] = all_entry[0][:, :]
     for i in range(1, len(all_entry)):
-        tmp = np.zeros((3 * p, all_entry[i].shape[1]))
+        tmp = np.full((3 * p, all_entry[i].shape[1]), np.nan)
         tmp[:all_entry[i].shape[0], :] = all_entry[i][:, :]
         entry = np.concatenate([entry, tmp], axis=1)
 
-    exit = np.zeros((3 * p, all_exit[0].shape[1]))
+    exit = np.full((3 * p, all_exit[0].shape[1]), np.nan)
     exit[:all_exit[0].shape[0], :] = all_exit[0][:, :]
     for i in range(1, len(all_exit)):
-        tmp = np.zeros((3 * p, all_exit[i].shape[1]))
+        tmp = np.full((3 * p, all_exit[i].shape[1]), np.nan)
         tmp[:all_exit[i].shape[0], :] = all_exit[i][:, :]
         exit = np.concatenate([exit, tmp], axis=1)
 
