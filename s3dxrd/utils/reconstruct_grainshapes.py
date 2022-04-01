@@ -1,11 +1,12 @@
 from __future__ import print_function
 import numpy as np
 from skimage.transform import iradon, radon
+from skimage.segmentation import random_walker
 import sys
 import matplotlib.pyplot as plt
 
 
-def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, recon_weights=None):
+def FBP_slice(grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, mode, recon_weights=None):
     grain_masks=[]
     grain_recons=[]
     for i,g in enumerate(grains):
@@ -13,11 +14,39 @@ def FBP_slice( grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, recon_
                     ymin, ystep, omegastep, number_y_scans, recon_weights)
         normalised_recon = recon/recon.max()
         grain_recons.append(normalised_recon)
-        mask = normalised_recon > rcut
+
+        ##### Temporary Trial Method#####
+        if mode == 'gradients':
+            markers = np.zeros(normalised_recon.shape, dtype=int)
+            markers[normalised_recon < rcut[0]] = 1
+            markers[normalised_recon > rcut[1]] = 2
+
+            mask = random_walker(normalised_recon, markers, beta=1e4, mode='bf') == 2
+
+            #fig,ax = plt.subplots(1,2, figsize=(15,5))
+            #im = ax[0].imshow(mask,aspect="auto")
+            #fig.colorbar(im,ax=ax[0])
+            #im = ax[1].imshow(normalised_recon,aspect="equal")
+            #fig.colorbar(im,ax=ax[1])
+            #plt.show()
+
+        elif mode == 'mass':
+            mass = 0
+            mask = np.zeros(recon.shape, dtype=bool)
+            r = recon.copy()
+            for _ in range(1000*1000):
+                ii, jj, maxpix = _find_maxpix(mask, r)
+                if mass+maxpix>rcut: break
+                mask[r==maxpix] = True
+                r[r==maxpix] = 0
+                mass += maxpix
+        #mask = normalised_recon > rcut
+        #################################
+
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
     
-    if 1:
+    if 0:
         fig,ax = plt.subplots(1,2, figsize=(15,5))
         im = ax[0].imshow(np.sum(grain_masks, axis=0),aspect="auto")
         fig.colorbar(im,ax=ax[0])
@@ -85,7 +114,7 @@ def FBP_grain( g, flt, ymin, ystep, omegastep, number_y_scans, recon_weights=Non
         # Normalise the sinogram to account for the intensity not being proportional
         # only to density but also to eta and theta and a lot of other stuff.
         normfactor = sinogram.max(axis=0)
-
+        #normfactor = np.sum(sinogram, axis=0)
         normfactor[normfactor==0]=1.0
         sinogram = sinogram/normfactor
 
@@ -223,3 +252,17 @@ def conflict_exists( i,j,grain_masks):
         return True
     else:
         return False
+
+def _find_maxpix(mask, recon):
+    if np.sum(mask)==0:
+        i,j = np.where(recon==np.max(recon))
+    else:
+        vals, idx = [], []
+        for i in range(1,mask.shape[0]-1):
+            for j in range(1,mask.shape[1]-1):
+                if not mask[i,j] and (mask[i-1,j] or mask[i,j-1] or mask[i+1,j] or mask[i,j+1]):
+                    vals.append(recon[i,j])
+                    idx.append( (i,j)  )
+        i,j  = idx[np.argmax(vals)]
+    return i, j, recon[i,j]
+
