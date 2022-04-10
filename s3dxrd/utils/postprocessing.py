@@ -14,10 +14,12 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from s3dxrd.utils.stiffness import vec_to_tens
 
 
-def vtk_to_numpy(vtkfile, plot=False):
+def vtk_to_numpy(vtkfile, components, plot=False):
     """
     Import point cloud data stored in a VTK file to a list of Numpy arrays.
 
+    :param components: Names of stress/strain components
+    :type components: list
     :param plot: Plot the reconstructed data as a point cloud.
     :type plot: bool
     :param vtkfile: The path of the file containing the original data as an unstructured grid.
@@ -32,7 +34,6 @@ def vtk_to_numpy(vtkfile, plot=False):
     filereader.Update()
 
     data = filereader.GetOutput()
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
     coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
     values = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
 
@@ -49,12 +50,12 @@ def vtk_to_numpy(vtkfile, plot=False):
     return np.array(values), coords
 
 
-def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
+def boundary(coords, values, file, stepsize, components, nlayers=1, normal_values=None, plot=False):
     # TODO: Implement multi-layer alpha shape calculation.
     """
     Calculate the alpha shape (the concave hull) for a point cloud consisting of a given set of
     three-dimensional coordinates. The code presumes that the coordinates are given in microns and that the
-    measurements are taken 25 microns apart.
+    measurements are taken stepsize microns apart.
 
     :param file: The name of the .vtu file where the boundary will be output.
     :type file: str
@@ -77,8 +78,8 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
     """
     coords_4d = np.hstack((coords, np.ones((coords.shape[0], 1))))
 
-    transform_scale = np.array([[25., 0, 0, 0], [0, 25., 0, 0], [0, 0, 25., 0], [0, 0, 0, 1.]])
-    inv_transform_scale = np.array([[1 / 25., 0, 0, 0], [0, 1 / 25., 0, 0], [0, 0, 1 / 25., 0], [0, 0, 0, 1.]])
+    transform_scale = np.array([[stepsize, 0, 0, 0], [0, stepsize, 0, 0], [0, 0, stepsize, 0], [0, 0, 0, 1.]])
+    inv_transform_scale = np.array([[1 / stepsize, 0, 0, 0], [0, 1 / stepsize, 0, 0], [0, 0, 1 / stepsize, 0], [0, 0, 0, 1.]])
     voxel_coords = (inv_transform_scale @ coords_4d.T)
 
     max_vals = np.amax(voxel_coords[:3, :], axis=1)
@@ -125,7 +126,6 @@ def boundary(coords, values, file, nlayers=1, normal_values=None, plot=False):
     _check_bc_coord_equality(boundary_coords, coords, file)
     keys = [tuple(np.round(c, 5)) for c in coords]
     data_dict = dict(zip(keys, values.T))
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
     boundary_data = np.vstack([data_dict[tuple(np.round(bc, 5))] for bc in boundary_coords])
 
     # For testing purposes only, requires previous calculation of the boundary points.
@@ -427,17 +427,16 @@ def sum_z_stress(directory_path, nbr_z_scans, stepsize):
     return np.round(sum_z_stress)
 
 
-def append_quantities(input, output, titles, values):
+def append_quantities(input, output, components,  titles, values):
     filereader = vtk_xml.vtkXMLUnstructuredGridReader()
     filereader.SetFileName(input)
     filereader.Update()
 
     data = filereader.GetOutput()
     coords = vtk_np.vtk_to_numpy(data.GetPoints().GetData())
-    components = ["XX", "YY", "ZZ", "YZ", "XZ", "XY", "sigma_1", "sigma_2", "sigma_3"]
     vals = [vtk_np.vtk_to_numpy(data.GetPointData().GetArray(comp)) for comp in components]
     components += titles
-    vals.append(values)
+    vals += values
     vals = np.ascontiguousarray(vals)
     coords = np.ascontiguousarray(coords.T)
 

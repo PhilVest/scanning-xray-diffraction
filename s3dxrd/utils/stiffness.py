@@ -163,21 +163,21 @@ def calculate_stress_by_vector_rotation(wlsq_strain, U):
     return wlsq_stress
 
 
-def calc_principal_stresses(wlsq_stress):
+def calc_principal(values):
     """
     Calculate the principal stresses by solving the eigenvalue problem for each reconstructed strain tensor.
     The result is a list of numpy arrays where each numpy array contains one of the principal stress components.
 
-    :param wlsq_stress: Stresses as a list of numpy arrays, where each list contains a stress component. The order of
+    :param values: Stresses as a list of numpy arrays, where each list contains a stress component. The order of
         the stresses should be ["XX", "YY", "ZZ", "YZ", "XZ", "XY"].
-    :type wlsq_stress: list[ndarray]
+    :type values: list[ndarray]
 
     :return: The principal stresses as a list of numpy arrays. The order of the principal stresses is
         ["σ_1", "σ_2", "σ_3"], where σ_1 corresponds to the largest tensile stress and σ_3 correspond to the largest
         compressive stress.
     :rtype: list[ndarray]
     """
-    stress = np.column_stack(wlsq_stress)
+    stress = np.column_stack(values)
     nrows = np.size(stress, 0)
     principal_stresses = np.zeros((nrows, 3))
 
