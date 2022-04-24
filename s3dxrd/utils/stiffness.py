@@ -187,7 +187,7 @@ def calc_principal(values):
         eigenvals = np.sort(eigenvals)[::-1]  # Should reverse the array so that it is ordered from greatest to least.
 
         principal_stresses[i, 0] = eigenvals[0]
-        principal_stresses[i, 1] = sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
+        principal_stresses[i, 1] = eigenvals[1]  # sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
         principal_stresses[i, 2] = eigenvals[2]
 
     principal_stresses = np.hsplit(principal_stresses, 3)
@@ -208,6 +208,7 @@ def vec_to_tens(vec):
     """
     tens = np.row_stack(np.array([[vec[0], vec[5], vec[4]], [vec[5], vec[1], vec[3]], [vec[4], vec[3], vec[2]]]))
     return tens
+
 
 def tens_to_vec(tens):
     """
