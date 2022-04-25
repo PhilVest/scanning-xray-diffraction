@@ -221,6 +221,7 @@ def vec_to_tens(vec):
     tens = np.row_stack(np.array([[vec[0], vec[5], vec[4]], [vec[5], vec[1], vec[3]], [vec[4], vec[3], vec[2]]]))
     return tens
 
+
 def tens_to_vec(tens):
     """
        Private function for converting 3x3 tensors into 6 component strain or stress vectors. Does not account for
