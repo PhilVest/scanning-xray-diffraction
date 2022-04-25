@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 
 
-def alpha_quartz_stiffness():
+def alpha_quartz_stiffness(isotropy):
     """
     Returns the stiffness matrix for α-silicon dioxide, as defined in Voigt notation.
 
@@ -10,6 +10,14 @@ def alpha_quartz_stiffness():
     :rtype: ndarray
 
     """
+    if isotropy:
+        ny = 0.17
+        E = 70*1e9
+        diag = np.array([1-ny, 1-ny, 1-ny, 0.5*(1-2*ny), 0.5*(1-2*ny), 0.5*(1-2*ny)])
+        C = np.diag(diag, 0)
+        C[0,1] = C[0,2] = C[1,2] = C[1,0] = C[2,0] = C[2,1] = ny
+        return C*(E/((1+ny)*(1-2*ny)))
+    
     C11, C33, C44, C66, C12, C13, C14 = 86.99, 106.39, 58.12, 40.12, 6.75, 12.17, 17.99
 
     C = np.zeros((6, 6))
@@ -70,7 +78,7 @@ def _get_rotation_matrix(U):
     return M
 
 
-def calculate_stress_by_matrix_rotation(wlsq_strain, U):
+def calculate_stress_by_matrix_rotation(wlsq_strain, U, isotropy=False):
     """
     Calculate the intra-granular stresses by applying the sample system stiffnes matrix for a given grain and z-slice
     to the corresponding strains.
@@ -80,11 +88,13 @@ def calculate_stress_by_matrix_rotation(wlsq_strain, U):
     :type wlsq_strain: list[ndarray]
     :param U: The orientation matrix for a given grain and z-slice.
     :type U: ndarray
+    :param isotropy: Toggle material isotropy on/off.
+    :type isotropy: bool
     :return: The intra-granular stresses in the same format as the provided intragranular strains.
     :rtype: list[ndarray]
     """
     # Get the stiffness matrix as measured in the grain coordinate system
-    C = alpha_quartz_stiffness()
+    C = alpha_quartz_stiffness(isotropy)
     # Rotate the stiffness matrix by the grain orientation matrix
     C = transform_stiffness(U, C)
     # Stack the strain vectors into a matrix, where each row contains the strain components for a certain element in
@@ -108,7 +118,7 @@ def calculate_stress_by_matrix_rotation(wlsq_strain, U):
     return wlsq_stress
 
 
-def calculate_stress_by_vector_rotation(wlsq_strain, U):
+def calculate_stress_by_vector_rotation(wlsq_strain, U, isotropy=False):
     """
        Calculate the intra-granular stresses by converting the strains into a 3x3 tensor format and using the grain
        orientation matrix to calculate the strains in the grain coordiante system. The stiffness matrix is then applied
@@ -119,6 +129,8 @@ def calculate_stress_by_vector_rotation(wlsq_strain, U):
        :type wlsq_strain: list[ndarray]
        :param U: The orientation matrix for a given grain and z-slice.
        :type U: ndarray
+       :param isotropy: Toggle material isotropy on/off.
+       :type isotropy: bool
        :return: The intra-granular stresses in the same format as the provided intragranular strains.
        :rtype: list[ndarray]
        """
@@ -127,7 +139,7 @@ def calculate_stress_by_vector_rotation(wlsq_strain, U):
     # by solving a system of equations.
 
     # Get the stiffness matrix as measured in the grain coordinate system
-    C = alpha_quartz_stiffness()
+    C = alpha_quartz_stiffness(isotropy)
 
     # Stack the strain vectors into a matrix, where each row contains the strain components for a certain element in
     # the mesh which the stress will be plotted on. Make an empty matrix for the stress vectors.
@@ -187,7 +199,7 @@ def calc_principal(values):
         eigenvals = np.sort(eigenvals)[::-1]  # Should reverse the array so that it is ordered from greatest to least.
 
         principal_stresses[i, 0] = eigenvals[0]
-        principal_stresses[i, 1] = sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
+        principal_stresses[i, 1] = eigenvals[1]#sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
         principal_stresses[i, 2] = eigenvals[2]
 
     principal_stresses = np.hsplit(principal_stresses, 3)
