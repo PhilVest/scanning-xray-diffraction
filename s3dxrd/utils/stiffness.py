@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import ndarray
-
+from xfab import tools
 
 def alpha_quartz_stiffness(isotropy):
     """
@@ -95,8 +95,11 @@ def calculate_stress_by_matrix_rotation(wlsq_strain, U, isotropy=False):
     """
     # Get the stiffness matrix as measured in the grain coordinate system
     C = alpha_quartz_stiffness(isotropy)
+    # Account for the discrepancy between the IEEE definition of the coordinate system, used for the stiffness matrix,
+    # and Poulsens definition of the grain coordinate system by rotating the vector to the IEEE system.
+    E = get_alignement_mat()
     # Rotate the stiffness matrix by the grain orientation matrix
-    C = transform_stiffness(U, C)
+    C = transform_stiffness(U @ E, C)
     # Stack the strain vectors into a matrix, where each row contains the strain components for a certain element in
     # the mesh which the stress will be plotted on. Make an empty matrix for the stress vectors.
     strain_mat = np.column_stack(wlsq_strain)
@@ -146,11 +149,15 @@ def calculate_stress_by_vector_rotation(wlsq_strain, U, isotropy=False):
     strain_mat = np.column_stack(wlsq_strain)
     stress_mat = np.zeros_like(strain_mat)
 
+    # Account for the discrepancy between the IEEE definition of the coordinate system, used for the stiffness matrix,
+    # and Poulsens definition of the grain coordinate system by rotating the vector to the IEEE system.
+    E = get_alignment_mat()
+
     for i in range(np.size(strain_mat, 0)):
         strain_vector = strain_mat[i, :]
         # Transform the strain_vector to the grain coordinate system.
         strain_tensor = vec_to_tens(strain_vector)
-        grain_strain_tensor = U.T @ strain_tensor @ U
+        grain_strain_tensor = E.T @ (U.T @ strain_tensor @ U) @ E
 
         # Convert the grain strain vector to Voigt notation.
         grain_strain_vector = tens_to_vec(grain_strain_tensor)
@@ -162,7 +169,7 @@ def calculate_stress_by_vector_rotation(wlsq_strain, U, isotropy=False):
 
         # Convert the stress vector to the sample coordinate system.
         grain_stess_tensor = vec_to_tens(grain_stress_vector)
-        sample_stress_tensor = U @ grain_stess_tensor @ U.T
+        sample_stress_tensor = U @ (E @ grain_stess_tensor @ E.T) @ U.T
         sample_stress_vector = tens_to_vec(sample_stress_tensor)
 
         stress_mat[i, :] = sample_stress_vector
@@ -191,22 +198,22 @@ def calc_principal(values):
     """
     stress = np.column_stack(values)
     nrows = np.size(stress, 0)
-    principal_stresses = np.zeros((nrows, 3))
+    principal_values = np.zeros((nrows, 3))
 
     for i in range(nrows):
         sigma = vec_to_tens(stress[i, :])
         eigenvals, eigenvects = np.linalg.eig(sigma)
         eigenvals = np.sort(eigenvals)[::-1]  # Should reverse the array so that it is ordered from greatest to least.
 
-        principal_stresses[i, 0] = eigenvals[0]
-        principal_stresses[i, 1] = eigenvals[1]#sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
-        principal_stresses[i, 2] = eigenvals[2]
+        principal_values[i, 0] = eigenvals[0]
+        principal_values[i, 1] = eigenvals[1]#sigma[0, 0] + sigma[1, 1] + sigma[2, 2] - eigenvals[0] - eigenvals[2]
+        principal_values[i, 2] = eigenvals[2]
 
-    principal_stresses = np.hsplit(principal_stresses, 3)
-    for i, arr in enumerate(principal_stresses):
-        principal_stresses[i] = arr.reshape((-1))
+    principal_values = np.hsplit(principal_values, 3)
+    for i, arr in enumerate(principal_values):
+        principal_values[i] = arr.reshape((-1))
 
-    return principal_stresses
+    return principal_values
 
 
 def vec_to_tens(vec):
@@ -233,3 +240,14 @@ def tens_to_vec(tens):
        """
     vec = np.array([tens[0, 0], tens[1, 1], tens[2, 2], tens[1, 2], tens[0, 2], tens[0, 1]])
     return vec
+
+def get_alignment_mat():
+    cell = [4.926, 4.926, 5.4189, 90.0, 90.0, 120.0]  # From fit.par
+    B = tools.form_b_mat(cell)
+    A = np.linalg.inv((1 / (2 * np.pi)) * B.T)
+    E = np.column_stack((A[:, 0], np.cross(A[:, 2], A[:, 0]), A[:, 2]))
+    # Normalize the new vectors
+    for i in range(3):
+        E[:, i] /= np.linalg.norm(E[:, i])
+
+    return E
