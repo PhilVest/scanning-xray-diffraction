@@ -97,7 +97,7 @@ def calculate_stress_by_matrix_rotation(wlsq_strain, U, isotropy=False):
     C = alpha_quartz_stiffness(isotropy)
     # Account for the discrepancy between the IEEE definition of the coordinate system, used for the stiffness matrix,
     # and Poulsens definition of the grain coordinate system by rotating the vector to the IEEE system.
-    E = get_alignement_mat()
+    E = get_alignment_mat()
     # Rotate the stiffness matrix by the grain orientation matrix
     C = transform_stiffness(U @ E, C)
     # Stack the strain vectors into a matrix, where each row contains the strain components for a certain element in
