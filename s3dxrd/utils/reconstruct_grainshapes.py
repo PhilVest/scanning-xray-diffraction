@@ -15,7 +15,6 @@ def FBP_slice(grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, mode, r
         normalised_recon = recon/recon.max()
         grain_recons.append(normalised_recon)
 
-        ##### Temporary Trial Method#####
         if mode == 'gradients':
             markers = np.zeros(normalised_recon.shape, dtype=int)
             markers[normalised_recon < rcut[0]] = 1
@@ -30,6 +29,9 @@ def FBP_slice(grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, mode, r
             #fig.colorbar(im,ax=ax[1])
             #plt.show()
 
+        # Suggested alternative method for performing the segmentations. It has not been used yet since "gradients"
+        # yielded better results for the test data set. Might be useful for other data sets.
+
         elif mode == 'mass':
             mass = 0
             mask = np.zeros(recon.shape, dtype=bool)
@@ -40,8 +42,8 @@ def FBP_slice(grains, flt, omegastep, rcut, ymin, ystep, number_y_scans, mode, r
                 mask[r==maxpix] = True
                 r[r==maxpix] = 0
                 mass += maxpix
-        #mask = normalised_recon > rcut
-        #################################
+
+        # mask = normalised_recon > rcut # Previous method for performing the segmentation, simply by using a threshold.
 
         grain_masks.append(mask)
     update_grainshapes(grain_recons,grain_masks)
